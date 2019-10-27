@@ -279,11 +279,25 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // Fly up
     controller.set_position(0, 0, 1, 0);
-
+    
+    // Wait
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
+    // Fly in a square
+    controller.set_position(0, 1, 1, 0);
+    controller.set_position(1, 1, 1, 0);
+    controller.set_position(1, 0, 1, 0);
+    controller.set_position(0, 0, 1, 0);
+
+    // Wait
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    // Land
     controller.land();
+
+    AP_MAV_INFO("Finished");
 
     return 0;
 }
