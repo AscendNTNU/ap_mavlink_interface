@@ -28,6 +28,10 @@ struct State {
     operator Value() const { return value; }
     explicit operator bool() = delete;
 
+    bool ready_to_fly() {
+        return value == Armed || value == PositionFollow || value == AttitudeFollow || value == Halted;
+    }
+
     bool is_offboard() {
         return value == PositionFollow || value == AttitudeFollow;
     }
@@ -142,7 +146,7 @@ public:
     }
 
     int position_follow(float x0, float y0, float z0, float yaw0) {
-        if (state != State::Armed && state != State::AttitudeFollow && state != State::PositionFollow) {
+        if (!state.ready_to_fly()) {
             AP_MAV_ERR("Not in correct state");
             return 1;
         }
@@ -157,7 +161,7 @@ public:
     }
 
     int attitude_follow(float roll0, float pitch0, float yaw0, float thrust0) {
-        if (state != State::Armed && state != State::AttitudeFollow && state != State::PositionFollow) {
+        if (!state.ready_to_fly()) {
             AP_MAV_ERR("Not in correct state");
             return 1;
         }
@@ -218,6 +222,25 @@ public:
         }
 
         state = State::Connected;
+
+        return 0;
+    }
+
+    int halt() {
+        if (!state.ready_to_fly()) {
+            AP_MAV_ERR("Not in a flying state");
+            return 1;
+        }
+
+        mavsdk::Telemetry::PositionNED pos = telemetry->position_velocity_ned().position;
+
+        offboard->set_attitude({pos.north_m, pos.east_m, pos.down_m, 0});
+
+        if(start_offboard()) {
+            return 1;
+        }
+
+        state = State::Halted;
 
         return 0;
     }
