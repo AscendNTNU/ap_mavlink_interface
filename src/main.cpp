@@ -158,6 +158,8 @@ public:
         }
 
         state = State::PositionFollow;
+
+        return 0;
     }
 
     int attitude_follow(float roll0, float pitch0, float yaw0, float thrust0) {
@@ -280,7 +282,7 @@ int main(int argc, char **argv)
     }
 
     // Fly up
-    controller.set_position(0, 0, 1, 0);
+    controller.position_follow(0, 0, 1, 0);
     
     // Wait
     std::this_thread::sleep_for(std::chrono::seconds(3));
