@@ -98,6 +98,7 @@ public:
 
         telemetry = std::make_shared<mavsdk::Telemetry>(system);
         action = std::make_shared<mavsdk::Action>(system);
+        offboard = std::make_shared<mavsdk::Offboard>(system);
 
         // We want to listen to the altitude of the drone at 1 Hz.
         const mavsdk::Telemetry::Result set_rate_result = telemetry->set_rate_position(1.0);
