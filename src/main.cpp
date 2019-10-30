@@ -290,8 +290,11 @@ int main(int argc, char **argv)
 
     // Fly in a square
     controller.set_position(0, 1, 1, 0);
+    std::this_thread::sleep_for(std::chrono::seconds(3));
     controller.set_position(1, 1, 1, 0);
+    std::this_thread::sleep_for(std::chrono::seconds(3));
     controller.set_position(1, 0, 1, 0);
+    std::this_thread::sleep_for(std::chrono::seconds(3));
     controller.set_position(0, 0, 1, 0);
 
     // Wait
