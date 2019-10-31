@@ -1,0 +1,54 @@
+from ros:melodic
+
+ENV ROS_WORKSPACE_PATH=/root/catkin_ws
+ENV ROS_PACKAGE_NAME=ap_mavlink_statemachine
+
+# Install dependencies
+RUN apt update -y && apt install -y \
+    build-essential \
+    python-catkin-pkg \
+    python-catkin-tools \
+    ros-melodic-mav-msgs \
+    python-jinja2 \
+    python-toml \
+    gazebo9 \
+    libgazebo9-dev \
+    libopencv-dev \
+    libeigen3-dev \
+    libgstreamer1.0-dev \
+    tmux
+
+# Install MAVSDK
+RUN mkdir ~/build && \
+    cd ~/build && \
+    git clone https://github.com/mavlink/MAVSDK.git && \
+    cd MAVSDK && \
+    git checkout master && \
+    git submodule update --init --recursive && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_SHARED_LIBS=ON -Bbuild/default -H. && \
+    cmake --build build/default && \
+    cmake --build build/default --target install
+
+# Install PX4 Firwmare
+RUN cd ~/build && \
+    git clone https://github.com/PX4/Firmware && \
+    cd Firmware && \
+    git submodule update --init --recursive && \
+    make px4_sitl
+
+# Setup catkin
+RUN mkdir -p $ROS_WORKSPACE_PATH/src && \
+    cd $ROS_WORKSPACE_PATH && \
+    catkin init && \
+    catkin config --extend /opt/ros/melodic/ && \
+    echo "source $ROS_WORKSPACE_PATH/devel/setup.bash" >> ~/.bashrc && \
+    /bin/bash -c "source ~/.bashrc"
+
+# COPY ./ $ROS_WORKSPACE_PATH/src/$ROS_PACKAGE_NAME/
+# WORKDIR $ROS_WORKSPACE_PATH/src
+# RUN cd $ROS_WORKSPACE_PATH && \
+#     catkin build
+
+
+
+

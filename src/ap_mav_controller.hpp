@@ -1,13 +1,10 @@
-#include <chrono>
-#include <cstdint>
 #include <mavsdk/mavsdk.h>
 #include <mavsdk/plugins/action/action.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
 #include <mavsdk/plugins/offboard/offboard.h>
 #include <iostream>
+#include <chrono>
 #include <thread>
-
-//#include <fsm.hpp>
 
 #define AP_MAV_INFO(msg) std::cerr << "Info: " << msg << std::endl
 #define AP_MAV_ERR(msg) std::cerr << "Error: " << msg << std::endl
@@ -248,62 +245,3 @@ public:
         return 0;
     }
 };
-
-#define ERROR_CONSOLE_TEXT "\033[31m" // Turn text on console red
-#define TELEMETRY_CONSOLE_TEXT "\033[34m" // Turn text on console blue
-#define NORMAL_CONSOLE_TEXT "\033[0m" // Restore normal console colour
-
-void usage(std::string bin_name)
-{
-    std::cout << NORMAL_CONSOLE_TEXT << "Usage : " << bin_name << " <connection_url>" << std::endl
-              << "Connection URL format should be :" << std::endl
-              << " For TCP : tcp://[server_host][:server_port]" << std::endl
-              << " For UDP : udp://[bind_host][:bind_port]" << std::endl
-              << " For Serial : serial:///path/to/serial/dev[:baudrate]" << std::endl
-              << "For example, to connect to the simulator use URL: udp://:14540" << std::endl;
-}
-
-int main(int argc, char **argv)
-{
-    ApMavController controller;
-    std::string connection_url;
-
-    if (argc == 2) {
-        connection_url = argv[1];
-        if (controller.connect(connection_url)) {
-            return 1;
-        }
-    } else {
-        usage(argv[0]);
-        return 1;
-    }
-
-    if (controller.arm()) {
-        return 1;
-    }
-
-    // Fly up
-    controller.position_follow(0, 0, 1, 0);
-    
-    // Wait
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-
-    // Fly in a square
-    controller.set_position(0, 1, 1, 0);
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-    controller.set_position(1, 1, 1, 0);
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-    controller.set_position(1, 0, 1, 0);
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-    controller.set_position(0, 0, 1, 0);
-
-    // Wait
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-
-    // Land
-    controller.land();
-
-    AP_MAV_INFO("Finished");
-
-    return 0;
-}
