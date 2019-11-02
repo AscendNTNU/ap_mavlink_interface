@@ -1,7 +1,1 @@
-Actions:
-- Takeoff
-- SetPosition
-- TranstionToRawAttitude
-- Halt
-- Land
-
+# AlphaPilot MAVLink interface

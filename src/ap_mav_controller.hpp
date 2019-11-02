@@ -14,8 +14,9 @@ struct State {
         Idle,
         Connected,
         Armed,
+        OffboardUnarmed,
         PositionFollow,
-        AttitudeFollow,
+        AttitudeRateFollow,
         Halted
     };
 
@@ -25,12 +26,12 @@ struct State {
     operator Value() const { return value; }
     explicit operator bool() = delete;
 
-    bool ready_to_fly() {
-        return value == Armed || value == PositionFollow || value == AttitudeFollow || value == Halted;
+    bool offboard() {
+        return value == OffboardUnarmed || value == PositionFollow || value == AttitudeRateFollow || value == Halted;
     }
 
-    bool is_offboard() {
-        return value == PositionFollow || value == AttitudeFollow;
+    bool armed() {
+        return value == Armed || value == PositionFollow || value == AttitudeRateFollow || value == Halted;
     }
 private:
     Value value;
@@ -44,21 +45,10 @@ class ApMavController {
     std::shared_ptr<mavsdk::Offboard> offboard;
 
 private:
-    int start_offboard() {
-        if (state == State::Armed) {
-            mavsdk::Offboard::Result offboard_result = offboard->start();
-
-            if (offboard_result != mavsdk::Offboard::Result::SUCCESS) {
-                AP_MAV_ERR("Could not enter offboard state");
-                return 1;
-            }
-        }
-        return 0;
-    }
 
     int stop_offboard() {
         //if (offboard->is_active()) {
-        if (state.is_offboard()) {
+        if (state.offboard()) {
             mavsdk::Offboard::Result offboard_result = offboard->stop();
 
             if (offboard_result != mavsdk::Offboard::Result::SUCCESS) {
@@ -71,6 +61,11 @@ private:
 
 public:
     int connect(std::string connection_url) {
+        if (state != State::Idle) {
+            AP_MAV_ERR("Not in idle state");
+            return 1;
+        }
+
         mavsdk::ConnectionResult conn_res = dc.add_any_connection(connection_url);
         if (conn_res != mavsdk::ConnectionResult::SUCCESS) {
             AP_MAV_ERR("Connection failed");
@@ -104,6 +99,54 @@ public:
             return 1;
         }
 
+        telemetry->armed_async([this](bool armed) {
+            if (armed && !this->state.armed()) {
+                AP_MAV_INFO("Drone was armed");
+                this->offboard->set_attitude({0, 0, 0, 0});
+                if (this->state.offboard()) {
+                    this->state = State::Halted;
+                }
+                else {
+                    this->state = State::Armed;
+                }
+            }
+            else if (!armed && this->state.armed()) {
+                AP_MAV_INFO("Drone was unarmed");
+                if (this->state.offboard()) {
+                    this->state = State::OffboardUnarmed;
+                }
+                else {
+                    this->state = State::Connected;
+                }
+            }
+        });
+
+        telemetry->flight_mode_async([this](mavsdk::Telemetry::FlightMode flight_mode) {
+            if (flight_mode == mavsdk::Telemetry::FlightMode::OFFBOARD && !this->state.offboard()) {
+                AP_MAV_INFO("Drone entered offboard mode");
+                // FIXME: Should we reset attitude here or not?
+                // this->offboard->set_attitude({0, 0, 0, 0});
+                if (this->state.armed()) {
+                    this->state = State::Halted;
+                }
+                else {
+                    this->state = State::OffboardUnarmed;
+                }
+            }
+            else if (flight_mode != mavsdk::Telemetry::FlightMode::OFFBOARD && this->state.offboard()) {
+                AP_MAV_INFO("Drone exited offboard mode");
+                if (this->state.armed()) {
+                    this->state = State::Armed;
+                }
+                else {
+                    this->state = State::Connected;
+                }
+            }
+        });
+
+        // We want to set a offboard pos, so that we can enter offboard mode later
+        offboard->set_attitude({0, 0, 0, 0});
+
         state = State::Connected;
 
         return 0;
@@ -114,15 +157,6 @@ public:
             AP_MAV_ERR("Not in connected state");
             return 1;
         }
-
-        /*
-        telemetry->position_async([](Telemetry::Position position) {
-            std::cout << TELEMETRY_CONSOLE_TEXT // set to blue
-                      << "Altitude: " << position.relative_altitude_m << " m"
-                      << NORMAL_CONSOLE_TEXT // set to default color again
-                      << std::endl;
-        });
-        */
 
         // Check if vehicle is ready to arm
         while (telemetry->health_all_ok() != true) {
@@ -144,55 +178,27 @@ public:
     }
 
     int position_follow(float x0, float y0, float z0, float yaw0) {
-        if (!state.ready_to_fly()) {
-            AP_MAV_ERR("Not in correct state");
+        if (!state.offboard()) {
+            AP_MAV_ERR("Not in offboard mode");
             return 1;
         }
 
         offboard->set_position_ned({x0, y0, -z0, yaw0});
-
-        if(start_offboard()) {
-            return 1;
-        }
 
         state = State::PositionFollow;
 
         return 0;
     }
 
-    int attitude_follow(float roll0, float pitch0, float yaw0, float thrust0) {
-        if (!state.ready_to_fly()) {
-            AP_MAV_ERR("Not in correct state");
+    int attitude_rate_follow(float roll_r, float pitch_r, float yaw_r, float thrust) {
+        if (!state.offboard()) {
+            AP_MAV_ERR("Not in offboard mode");
             return 1;
         }
 
-        offboard->set_attitude({roll0, pitch0, yaw0, thrust0});
+        offboard->set_attitude_rate({roll_r, pitch_r, yaw_r, thrust});
 
-        if(start_offboard()) {
-            return 1;
-        }
-
-        state = State::AttitudeFollow;
-    }
-
-    int set_position(float x, float y, float z, float yaw) {
-        if (state != State::PositionFollow) {
-            AP_MAV_ERR("Not in position follow mode");
-            return 1;
-        }
-
-        offboard->set_position_ned({x, y, -z, yaw});
-
-        return 0;
-    }
-
-    int set_attitude(float roll, float pitch, float yaw, float thrust) {
-        if (state != State::AttitudeFollow) {
-            AP_MAV_ERR("Not in attitude follow mode");
-            return 1;
-        }
-
-        offboard->set_attitude({roll, pitch, yaw, thrust});
+        state = State::AttitudeRateFollow;
     }
 
     int land() {
@@ -227,21 +233,28 @@ public:
     }
 
     int halt() {
-        if (!state.ready_to_fly()) {
-            AP_MAV_ERR("Not in a flying state");
+        if (!state.offboard()) {
+            AP_MAV_ERR("Not in a offboard mode");
             return 1;
         }
 
-        mavsdk::Telemetry::PositionNED pos = telemetry->position_velocity_ned().position;
-
-        offboard->set_attitude({pos.north_m, pos.east_m, pos.down_m, 0});
-
-        if(start_offboard()) {
-            return 1;
-        }
+        offboard->set_attitude({0, 0, 0, 0});
 
         state = State::Halted;
 
+        return 0;
+    }
+
+    int start_offboard() {
+        //offboard->set_attitude({0, 0, 0, 0});
+        mavsdk::Offboard::Result offboard_result = offboard->start();
+
+        if (offboard_result != mavsdk::Offboard::Result::SUCCESS) {
+            AP_MAV_ERR("Could not enter offboard state");
+            return 1;
+        }
+
+        AP_MAV_INFO("Entered offboard mode");
         return 0;
     }
 };

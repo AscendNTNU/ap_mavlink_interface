@@ -4,9 +4,9 @@
 #include <ap_mav_controller.hpp>
 #include <geometry_msgs/Pose.h>
 #include <mav_msgs/common.h>
-#include <mav_msgs/AttitudeThrust.h>
+#include <mav_msgs/RollPitchYawrateThrust.h>
 
-#include <std_msgs/String.h>
+#include <std_msgs/Bool.h>
 
 void usage(std::string bin_name)
 {
@@ -20,10 +20,30 @@ void usage(std::string bin_name)
 
 struct CallbackHandler {
     ApMavController *controller;
+    double last_roll;
+    double last_pitch;
+
+    void arm_callback(const std_msgs::Bool to_arm) {
+        if (to_arm.data && controller->arm()) {
+            ROS_ERROR_STREAM("Arming failed");
+        }
+    }
 
     void position_callback(const geometry_msgs::Pose pose) {
-        if (controller->set_position(pose.position.x, pose.position.y, pose.position.z, 0)) {
+        if (controller->position_follow(pose.position.x, pose.position.y, pose.position.z, 0)) {
             ROS_WARN_STREAM("Will not go to position: " << pose.position);
+        }
+    }
+
+    void attitude_callback(const mav_msgs::RollPitchYawrateThrust attitude) {
+        float roll_rate  = attitude.roll - last_roll;
+        float pitch_rate = attitude.pitch - last_pitch;
+
+        last_roll = attitude.roll;
+        last_pitch = attitude.pitch;
+
+        if (controller->attitude_rate_follow(roll_rate, pitch_rate, attitude.yaw_rate, attitude.thrust.z)) {
+            ROS_WARN_STREAM("Will not follow attitude");
         }
     }
 };
@@ -44,18 +64,13 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    controller.arm();
-
-    // Enter positin follow mode:
-    if (controller.position_follow(0, 0, 1, 0)) {
-        ROS_ERROR_STREAM("Cannot enter position follow mode");
-        ros::shutdown();
-        return 1;
-    }
+    //controller.arm();
+    //controller.start_offboard();
 
     CallbackHandler cb = { &controller };
 
-    ros::Subscriber sub = n.subscribe("/uav/control/position", 1, &CallbackHandler::position_callback, &cb);
+    ros::Subscriber sub_arm = n.subscribe("/uav/control/arm", 1, &CallbackHandler::arm_callback, &cb);
+    ros::Subscriber sub_pos = n.subscribe("/uav/control/position", 1, &CallbackHandler::position_callback, &cb);
 
     ros::spin();
     return 0;
