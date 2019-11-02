@@ -7,6 +7,7 @@
 #include <thread>
 
 #define AP_MAV_INFO(msg) std::cerr << "Info: " << msg << std::endl
+#define AP_MAV_WARN(msg) std::cerr << "Warning: " << msg << std::endl
 #define AP_MAV_ERR(msg) std::cerr << "Error: " << msg << std::endl
 
 struct State {
@@ -178,12 +179,12 @@ public:
     }
 
     int position_follow(float x0, float y0, float z0, float yaw0) {
+        offboard->set_position_ned({x0, y0, -z0, yaw0});
+
         if (!state.offboard()) {
-            AP_MAV_ERR("Not in offboard mode");
+            AP_MAV_WARN("Not in offboard mode");
             return 1;
         }
-
-        offboard->set_position_ned({x0, y0, -z0, yaw0});
 
         state = State::PositionFollow;
 
@@ -191,14 +192,16 @@ public:
     }
 
     int attitude_rate_follow(float roll_r, float pitch_r, float yaw_r, float thrust) {
+        offboard->set_attitude_rate({roll_r, pitch_r, yaw_r, thrust});
+
         if (!state.offboard()) {
-            AP_MAV_ERR("Not in offboard mode");
+            AP_MAV_WARN("Not in offboard mode");
             return 1;
         }
 
-        offboard->set_attitude_rate({roll_r, pitch_r, yaw_r, thrust});
-
         state = State::AttitudeRateFollow;
+
+        return 0;
     }
 
     int land() {
@@ -233,12 +236,12 @@ public:
     }
 
     int halt() {
+        offboard->set_attitude({0, 0, 0, 0});
+
         if (!state.offboard()) {
-            AP_MAV_ERR("Not in a offboard mode");
+            AP_MAV_WARN("Not in a offboard mode");
             return 1;
         }
-
-        offboard->set_attitude({0, 0, 0, 0});
 
         state = State::Halted;
 
