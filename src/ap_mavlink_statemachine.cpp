@@ -29,6 +29,18 @@ struct CallbackHandler {
         }
     }
 
+    void offboard_callback(const std_msgs::Bool to_arm) {
+        if (to_arm.data && controller->start_offboard()) {
+            ROS_ERROR_STREAM("Starting offboard failed");
+        }
+    }
+
+    void land_callback(const std_msgs::Bool land) {
+        if (land.data && controller->land()) {
+            ROS_ERROR_STREAM("Landing failed");
+        }
+    }
+
     void position_callback(const geometry_msgs::Pose pose) {
         if (controller->position_follow(pose.position.x, pose.position.y, pose.position.z, 0)) {
             ROS_WARN_STREAM("Will not go to position: " << pose.position);
@@ -69,8 +81,11 @@ int main(int argc, char **argv)
 
     CallbackHandler cb = { &controller };
 
-    ros::Subscriber sub_arm = n.subscribe("/uav/control/arm", 1, &CallbackHandler::arm_callback, &cb);
-    ros::Subscriber sub_pos = n.subscribe("/uav/control/position", 1, &CallbackHandler::position_callback, &cb);
+    ros::Subscriber sub_arm      = n.subscribe("/uav/control/arm", 1, &CallbackHandler::arm_callback, &cb);
+    ros::Subscriber sub_offboard = n.subscribe("/uav/control/offboard", 1, &CallbackHandler::offboard_callback, &cb);
+    ros::Subscriber sub_land     = n.subscribe("/uav/control/land", 1, &CallbackHandler::land_callback, &cb);
+    ros::Subscriber sub_position = n.subscribe("/uav/control/position", 1, &CallbackHandler::position_callback, &cb);
+    ros::Subscriber sub_attitude = n.subscribe("/uav/control/attitude", 1, &CallbackHandler::attitude_callback, &cb);
 
     ros::spin();
     return 0;
