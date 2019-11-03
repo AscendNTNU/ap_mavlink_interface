@@ -81,9 +81,9 @@ int main(int argc, char **argv)
 
     CallbackHandler cb = { &controller };
 
-    ros::Subscriber sub_arm      = n.subscribe("/uav/control/arm", 1, &CallbackHandler::arm_callback, &cb);
-    ros::Subscriber sub_offboard = n.subscribe("/uav/control/offboard", 1, &CallbackHandler::offboard_callback, &cb);
-    ros::Subscriber sub_land     = n.subscribe("/uav/control/land", 1, &CallbackHandler::land_callback, &cb);
+    ros::Subscriber sub_arm      = n.subscribe("/uav/control/arm", 100, &CallbackHandler::arm_callback, &cb);
+    ros::Subscriber sub_offboard = n.subscribe("/uav/control/offboard", 100, &CallbackHandler::offboard_callback, &cb);
+    ros::Subscriber sub_land     = n.subscribe("/uav/control/land", 100, &CallbackHandler::land_callback, &cb);
     ros::Subscriber sub_position = n.subscribe("/uav/control/position", 1, &CallbackHandler::position_callback, &cb);
     ros::Subscriber sub_attitude = n.subscribe("/uav/control/attitude", 1, &CallbackHandler::attitude_callback, &cb);
 
