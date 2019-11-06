@@ -4,8 +4,7 @@
 #include <ap_mav_controller.hpp>
 #include <geometry_msgs/Pose.h>
 #include <mav_msgs/common.h>
-#include <mav_msgs/RollPitchYawrateThrust.h>
-
+#include <mav_msgs/RateThrust.h>
 #include <std_msgs/Bool.h>
 
 void usage(std::string bin_name)
@@ -47,14 +46,11 @@ struct CallbackHandler {
         }
     }
 
-    void attitude_callback(const mav_msgs::RollPitchYawrateThrust attitude) {
-        float roll_rate  = attitude.roll - last_roll;
-        float pitch_rate = attitude.pitch - last_pitch;
-
-        last_roll = attitude.roll;
-        last_pitch = attitude.pitch;
-
-        if (controller->attitude_rate_follow(roll_rate, pitch_rate, attitude.yaw_rate, attitude.thrust.z)) {
+    void attitude_rate_callback(const mav_msgs::RateThrust attitude_rates) {
+        double roll_rate = attitude_rates.angular_rates.x; 
+        double pitch_rate = attitude_rates.angular_rates.y; 
+        double yaw_rate = attitude_rates.angular_rates.z; 
+        if (controller->attitude_rate_follow(roll_rate, pitch_rate, yaw_rate, attitude_rates.thrust.z)) {
             ROS_WARN_STREAM("Will not follow attitude");
         }
     }
@@ -85,7 +81,7 @@ int main(int argc, char **argv)
     ros::Subscriber sub_offboard = n.subscribe("/uav/control/offboard", 100, &CallbackHandler::offboard_callback, &cb);
     ros::Subscriber sub_land     = n.subscribe("/uav/control/land", 100, &CallbackHandler::land_callback, &cb);
     ros::Subscriber sub_position = n.subscribe("/uav/control/position", 1, &CallbackHandler::position_callback, &cb);
-    ros::Subscriber sub_attitude = n.subscribe("/uav/control/attitude", 1, &CallbackHandler::attitude_callback, &cb);
+    ros::Subscriber sub_attitude = n.subscribe("/uav/control/attitude_rate", 1, &CallbackHandler::attitude_rate_callback, &cb);
 
     ros::spin();
     return 0;
