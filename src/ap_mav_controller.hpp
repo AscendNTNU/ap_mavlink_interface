@@ -5,6 +5,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <functional>
 
 #define AP_MAV_INFO(msg) std::cerr << "Info: " << msg << std::endl
 #define AP_MAV_WARN(msg) std::cerr << "Warning: " << msg << std::endl
@@ -16,9 +17,9 @@ struct State {
         Connected,
         Armed,
         OffboardUnarmed,
+        Ready,
         PositionFollow,
         AttitudeRateFollow,
-        Halted
     };
 
     State() = delete;
@@ -28,11 +29,11 @@ struct State {
     explicit operator bool() = delete;
 
     bool offboard() {
-        return value == OffboardUnarmed || value == PositionFollow || value == AttitudeRateFollow || value == Halted;
+        return value == Ready || value == OffboardUnarmed || value == PositionFollow || value == AttitudeRateFollow;
     }
 
     bool armed() {
-        return value == Armed || value == PositionFollow || value == AttitudeRateFollow || value == Halted;
+        return value == Ready || value == Armed || value == PositionFollow || value == AttitudeRateFollow;
     }
 private:
     Value value;
@@ -44,9 +45,9 @@ class ApMavController {
     std::shared_ptr<mavsdk::Action> action;
     std::shared_ptr<mavsdk::Telemetry> telemetry;
     std::shared_ptr<mavsdk::Offboard> offboard;
+    std::function<void()> ready_cb;
 
 private:
-
     int stop_offboard() {
         //if (offboard->is_active()) {
         if (state.offboard()) {
@@ -105,7 +106,8 @@ public:
                 AP_MAV_INFO("Drone was armed");
                 this->offboard->set_attitude({0, 0, 0, 0});
                 if (this->state.offboard()) {
-                    this->state = State::Halted;
+                    this->state = State::Ready;
+                    this->ready_cb();
                 }
                 else {
                     this->state = State::Armed;
@@ -128,7 +130,8 @@ public:
                 // FIXME: Should we reset attitude here or not?
                 // this->offboard->set_attitude({0, 0, 0, 0});
                 if (this->state.armed()) {
-                    this->state = State::Halted;
+                    this->state = State::Ready;
+                    this->ready_cb();
                 }
                 else {
                     this->state = State::OffboardUnarmed;
@@ -169,12 +172,6 @@ public:
         AP_MAV_INFO("Arming...");
         const mavsdk::Action::Result arm_result = action->arm();
 
-        if (arm_result != mavsdk::Action::Result::SUCCESS) {
-            AP_MAV_ERR("Arming failed");
-            return 1;
-        }
-
-        state = State::Armed;
         return 0;
     }
 
@@ -235,19 +232,6 @@ public:
         return 0;
     }
 
-    int halt() {
-        offboard->set_attitude({0, 0, 0, 0});
-
-        if (!state.offboard()) {
-            AP_MAV_WARN("Not in a offboard mode");
-            return 1;
-        }
-
-        state = State::Halted;
-
-        return 0;
-    }
-
     int start_offboard() {
         //offboard->set_attitude({0, 0, 0, 0});
         mavsdk::Offboard::Result offboard_result = offboard->start();
@@ -259,5 +243,9 @@ public:
 
         AP_MAV_INFO("Entered offboard mode");
         return 0;
+    }
+
+    void on_ready(std::function<void()> fn) {
+        ready_cb = fn;
     }
 };

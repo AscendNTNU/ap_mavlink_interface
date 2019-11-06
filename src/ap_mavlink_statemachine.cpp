@@ -72,8 +72,13 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    //controller.arm();
-    //controller.start_offboard();
+    ros::Publisher pub_ready = n.advertise<std_msgs::Bool>("/uav/control/ready", 100);
+
+    controller.on_ready([pub_ready]() {
+        std_msgs::Bool msg;
+        msg.data = true;
+        pub_ready.publish(msg);
+    });
 
     CallbackHandler cb = { &controller };
 
