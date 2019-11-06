@@ -45,7 +45,7 @@ class ApMavController {
     std::shared_ptr<mavsdk::Action> action;
     std::shared_ptr<mavsdk::Telemetry> telemetry;
     std::shared_ptr<mavsdk::Offboard> offboard;
-    std::function<void()> ready_cb;
+    std::function<void(bool)> ready_cb;
 
 private:
     int stop_offboard() {
@@ -107,7 +107,7 @@ public:
                 this->offboard->set_attitude({0, 0, 0, 0});
                 if (this->state.offboard()) {
                     this->state = State::Ready;
-                    this->ready_cb();
+                    this->ready_cb(true);
                 }
                 else {
                     this->state = State::Armed;
@@ -115,6 +115,7 @@ public:
             }
             else if (!armed && this->state.armed()) {
                 AP_MAV_INFO("Drone was unarmed");
+                this->ready_cb(false);
                 if (this->state.offboard()) {
                     this->state = State::OffboardUnarmed;
                 }
@@ -131,7 +132,7 @@ public:
                 // this->offboard->set_attitude({0, 0, 0, 0});
                 if (this->state.armed()) {
                     this->state = State::Ready;
-                    this->ready_cb();
+                    this->ready_cb(true);
                 }
                 else {
                     this->state = State::OffboardUnarmed;
@@ -139,6 +140,7 @@ public:
             }
             else if (flight_mode != mavsdk::Telemetry::FlightMode::OFFBOARD && this->state.offboard()) {
                 AP_MAV_INFO("Drone exited offboard mode");
+                this->ready_cb(false);
                 if (this->state.armed()) {
                     this->state = State::Armed;
                 }
@@ -245,7 +247,7 @@ public:
         return 0;
     }
 
-    void on_ready(std::function<void()> fn) {
+    void on_ready(std::function<void(bool)> fn) {
         ready_cb = fn;
     }
 };

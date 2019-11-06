@@ -72,11 +72,11 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    ros::Publisher pub_ready = n.advertise<std_msgs::Bool>("/uav/control/ready", 100);
+    ros::Publisher pub_ready = n.advertise<std_msgs::Bool>("/uav/control/ready", 100, true);
 
-    controller.on_ready([pub_ready]() {
+    controller.on_ready([pub_ready](bool ready) {
         std_msgs::Bool msg;
-        msg.data = true;
+        msg.data = ready;
         pub_ready.publish(msg);
     });
 
