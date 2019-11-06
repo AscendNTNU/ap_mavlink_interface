@@ -25,6 +25,7 @@ include_directories(
 )
 
 add_executable(ap_mavlink_statemachine src/ap_mavlink_statemachine.cpp)
+add_executable(test_path src/test_path_node.cpp)
 
 target_link_libraries(ap_mavlink_statemachine
     MAVSDK::mavsdk_action
@@ -33,4 +34,7 @@ target_link_libraries(ap_mavlink_statemachine
     MAVSDK::mavsdk
     ${catkin_LIBRARIES})
 
+
+target_link_libraries(test_path
+    ${catkin_LIBRARIES})
 
