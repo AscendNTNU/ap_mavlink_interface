@@ -2,6 +2,7 @@
 #include <mavsdk/plugins/action/action.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
 #include <mavsdk/plugins/offboard/offboard.h>
+#include <mavsdk/plugins/mocap/mocap.h>
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -45,7 +46,9 @@ class ApMavController {
     std::shared_ptr<mavsdk::Action> action;
     std::shared_ptr<mavsdk::Telemetry> telemetry;
     std::shared_ptr<mavsdk::Offboard> offboard;
+    std::shared_ptr<mavsdk::Mocap> mocap;
     std::function<void(bool)> ready_cb;
+    std::function<void(float, float, float, float, float, float)> position_cb;
 
 private:
     int stop_offboard() {
@@ -93,6 +96,7 @@ public:
         telemetry = std::make_shared<mavsdk::Telemetry>(system);
         action = std::make_shared<mavsdk::Action>(system);
         offboard = std::make_shared<mavsdk::Offboard>(system);
+        mocap = std::make_shared<mavsdk::Mocap>(system);
 
         // We want to listen to the altitude of the drone at 1 Hz.
         const mavsdk::Telemetry::Result set_rate_result = telemetry->set_rate_position(1.0);
@@ -249,5 +253,31 @@ public:
 
     void on_ready(std::function<void(bool)> fn) {
         ready_cb = fn;
+    }
+
+    int send_odometery(float x, float y, float z, float roll, float pitch, float yaw) {
+        // ~1cm in position, ~1rad in rotation
+        mavsdk::Mocap::Covariance covariance =
+           {0.01,  0.0,  0.0,  0.0,  0.0,  0.0,
+                  0.01,  0.0,  0.0,  0.0,  0.0,
+                        0.01,  0.0,  0.0,  0.0,
+                               0.1,  0.0,  0.0,
+                                     0.1,  0.0,
+                                           0.1};
+
+        mavsdk::Mocap::VisionPositionEstimate pose;
+        // Does this work?
+        pose.time_usec = 0;
+        pose.position_body = {x, y, z};
+        pose.angle_body = {roll, pitch, yaw};
+        pose.pose_covariance = covariance;
+
+        mocap->set_vision_position_estimate(pose);
+        
+        return 0;
+    }
+
+    void position_update(std::function<void(float, float, float, float, float, float)> fn) {
+        position_cb = fn;
     }
 };

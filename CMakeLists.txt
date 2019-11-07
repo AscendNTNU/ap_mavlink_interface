@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
         roscpp
         geometry_msgs
         mav_msgs
+        tf2
+        tf2_geometry_msgs
 )
 
 find_package(MAVSDK REQUIRED)
@@ -31,6 +33,7 @@ target_link_libraries(ap_mavlink_statemachine
     MAVSDK::mavsdk_action
     MAVSDK::mavsdk_telemetry
     MAVSDK::mavsdk_offboard
+    MAVSDK::mavsdk_mocap
     MAVSDK::mavsdk
     ${catkin_LIBRARIES})
 

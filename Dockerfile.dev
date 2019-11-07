@@ -44,8 +44,11 @@ RUN mkdir -p $ROS_WORKSPACE_PATH/src && \
     echo "source $ROS_WORKSPACE_PATH/devel/setup.bash" >> ~/.bashrc && \
     /bin/bash -c "source ~/.bashrc"
 
+RUN apt install -y ros-melodic-tf2 ros-melodic-tf2-geometry-msgs
+
+WORKDIR $ROS_WORKSPACE_PATH/src
+
 # COPY ./ $ROS_WORKSPACE_PATH/src/$ROS_PACKAGE_NAME/
-# WORKDIR $ROS_WORKSPACE_PATH/src
 # RUN cd $ROS_WORKSPACE_PATH && \
 #     catkin build
 

@@ -6,6 +6,10 @@
 #include <mav_msgs/common.h>
 #include <mav_msgs/RateThrust.h>
 #include <std_msgs/Bool.h>
+#include <tf2/convert.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 void usage(std::string bin_name)
 {
@@ -54,6 +58,18 @@ struct CallbackHandler {
             ROS_WARN_STREAM("Will not follow attitude");
         }
     }
+
+    void pose_callback(const geometry_msgs::Pose pose) {
+        double roll, pitch, yaw;
+        tf2::Quaternion rotation_q;
+        tf2::convert(pose.orientation, rotation_q);
+        tf2::Matrix3x3 rotation(rotation_q);
+        rotation.getRPY(roll, pitch, yaw);
+        if (controller->send_odometery(pose.position.x, pose.position.y, pose.position.z,
+                roll, pitch, yaw)) {
+            ROS_WARN_STREAM("Cannot send odometry");
+        }
+    }
 };
 
 int main(int argc, char **argv)
@@ -80,6 +96,19 @@ int main(int argc, char **argv)
         pub_ready.publish(msg);
     });
 
+    ros::Publisher pub_pose = n.advertise<std_msgs::Bool>("/uav/control/mav_pose", 100, true);
+
+    controller.position_update([pub_pose](float x, float y, float z, float roll, float pitch, float yaw) {
+        geometry_msgs::Pose msg;
+        msg.position.x = x;
+        msg.position.y = y;
+        msg.position.z = z;
+        tf2::Quaternion rotation;
+        rotation.setRPY(roll, pitch, yaw);
+        tf2::convert(rotation, msg.orientation);
+        pub_pose.publish(msg);
+    });
+
     CallbackHandler cb = { &controller };
 
     ros::Subscriber sub_arm      = n.subscribe("/uav/control/arm", 100, &CallbackHandler::arm_callback, &cb);
@@ -87,6 +116,7 @@ int main(int argc, char **argv)
     ros::Subscriber sub_land     = n.subscribe("/uav/control/land", 100, &CallbackHandler::land_callback, &cb);
     ros::Subscriber sub_position = n.subscribe("/uav/control/position", 1, &CallbackHandler::position_callback, &cb);
     ros::Subscriber sub_attitude = n.subscribe("/uav/control/attitude_rate", 1, &CallbackHandler::attitude_rate_callback, &cb);
+    ros::Subscriber sub_mocap    = n.subscribe("/uav/control/pose", 1, &CallbackHandler::pose_callback, &cb);
 
     ros::spin();
     return 0;
