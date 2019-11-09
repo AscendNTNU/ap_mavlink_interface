@@ -3,6 +3,11 @@
 The main node here is `ap_mavlink_statemachine`, it is supposed
 to handle *all* interactions with the pixhawk hardware.
 
+## Params
+| Name | About |
+| ---- | ----- |
+| `/uav/control/mavlink_url` | The url for mavlink to connect too. For simulator use `udp://:14540`. For serial use `serial:///path/to/serial/dev[:baudrate]`. |
+
 
 ## Subscribed topics 
 | Topic | Message Type | About |

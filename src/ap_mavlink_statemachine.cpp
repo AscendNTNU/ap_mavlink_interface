@@ -12,16 +12,6 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-void usage(std::string bin_name)
-{
-    std::cout << "Usage : " << bin_name << " <connection_url>" << std::endl
-              << "Connection URL format should be :" << std::endl
-              << " For TCP : tcp://[server_host][:server_port]" << std::endl
-              << " For UDP : udp://[bind_host][:bind_port]" << std::endl
-              << " For Serial : serial:///path/to/serial/dev[:baudrate]" << std::endl
-              << "For example, to connect to the simulator use URL: udp://:14540" << std::endl;
-}
-
 struct CallbackHandler {
     ApMavController *controller;
     double last_roll;
@@ -86,7 +76,7 @@ int main(int argc, char **argv)
     ApMavController controller;
     std::string connection_url;
 
-    n.getParam("connection_url", connection_url);
+    n.getParam("/uav/control/mavlink_url", connection_url);
 
     if (controller.connect(connection_url)) {
         ROS_ERROR_STREAM("Could not connect with URL: " << connection_url);
