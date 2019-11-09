@@ -3,6 +3,7 @@
 #include <iostream>
 #include <ap_mav_controller.hpp>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <mav_msgs/common.h>
 #include <mav_msgs/RateThrust.h>
 #include <std_msgs/Bool.h>
@@ -59,14 +60,19 @@ struct CallbackHandler {
         }
     }
 
-    void pose_callback(const geometry_msgs::Pose pose) {
+    void pose_callback(const geometry_msgs::PoseStamped pose) {
+        uint64_t usecs = pose.header.stamp.sec * 1000000 + pose.header.stamp.nsec / 1000;
+        double x = pose.pose.position.x;
+        double y = pose.pose.position.y;
+        double z = pose.pose.position.z;
+
         double roll, pitch, yaw;
         tf2::Quaternion rotation_q;
-        tf2::convert(pose.orientation, rotation_q);
+        tf2::convert(pose.pose.orientation, rotation_q);
         tf2::Matrix3x3 rotation(rotation_q);
         rotation.getRPY(roll, pitch, yaw);
-        if (controller->send_odometery(pose.position.x, pose.position.y, pose.position.z,
-                roll, pitch, yaw)) {
+
+        if (controller->send_odometery(usecs, x, y, z, roll, pitch, yaw)) {
             ROS_WARN_STREAM("Cannot send odometry");
         }
     }

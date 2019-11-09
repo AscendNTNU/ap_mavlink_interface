@@ -255,7 +255,7 @@ public:
         ready_cb = fn;
     }
 
-    int send_odometery(float x, float y, float z, float roll, float pitch, float yaw) {
+    int send_odometery(uint64_t usecs, float x, float y, float z, float roll, float pitch, float yaw) {
         // ~1cm in position, ~1rad in rotation
         mavsdk::Mocap::Covariance covariance =
            {0.01,  0.0,  0.0,  0.0,  0.0,  0.0,
@@ -266,8 +266,7 @@ public:
                                            0.1};
 
         mavsdk::Mocap::VisionPositionEstimate pose;
-        // Does this work?
-        pose.time_usec = 0;
+        pose.time_usec = usecs;
         pose.position_body = {x, y, z};
         pose.angle_body = {roll, pitch, yaw};
         pose.pose_covariance = covariance;

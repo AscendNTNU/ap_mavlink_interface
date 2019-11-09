@@ -12,7 +12,7 @@ to handle *all* interactions with the pixhawk hardware.
 | `/uav/control/land` | `std_msgs/Bool` | Send value `true` to land the drone | 
 | `/uav/control/position` | `geometry_msgs/Pose` | Postion for the drone to go to | 
 | `/uav/control/attitude_rate` | `mav_msgs/Rates` | Rates for the drone to follow | 
-| `/uav/control/pose` | `geometry_msgs/Pose` | Odometry informations | 
+| `/uav/control/pose` | `geometry_msgs/PoseStamped` | Odometry information | 
 
 ## Published topics 
 | Topic | Message Type | About |
