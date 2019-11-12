@@ -52,14 +52,16 @@ struct CallbackHandler {
 
     void pose_callback(const geometry_msgs::PoseStamped pose) {
         uint64_t usecs = pose.header.stamp.sec * 1000000 + pose.header.stamp.nsec / 1000;
-        double x = pose.pose.position.x;
-        double y = pose.pose.position.y;
+        double x = pose.pose.position.y;
+        double y = pose.pose.position.x;
         double z = -pose.pose.position.z;
 
         double roll, pitch, yaw;
+        tf2::Quaternion enu_to_ned;
+        enu_to_ned.setRPY(M_PI_2, 0.0, M_PI_2);
         tf2::Quaternion rotation_q;
         tf2::convert(pose.pose.orientation, rotation_q);
-        tf2::Matrix3x3 rotation(rotation_q);
+        tf2::Matrix3x3 rotation(enu_to_ned*rotation_q);
         rotation.getRPY(roll, pitch, yaw);
 
         if (controller->send_odometery(usecs, x, y, z, roll, pitch, yaw)) {
