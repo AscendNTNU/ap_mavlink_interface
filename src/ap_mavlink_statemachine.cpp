@@ -54,7 +54,7 @@ struct CallbackHandler {
         uint64_t usecs = pose.header.stamp.sec * 1000000 + pose.header.stamp.nsec / 1000;
         double x = pose.pose.position.x;
         double y = pose.pose.position.y;
-        double z = pose.pose.position.z;
+        double z = -pose.pose.position.z;
 
         double roll, pitch, yaw;
         tf2::Quaternion rotation_q;
