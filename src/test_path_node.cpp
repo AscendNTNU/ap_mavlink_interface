@@ -27,9 +27,11 @@ int main(int argc, char** argv) {
     }
 
     // Wait to reach first setpoint
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 100; i++) {
         loop_rate.sleep();
     }
+
+    /*
 
     // Drive in circle
     pose.position.x = 0.5;
@@ -67,6 +69,7 @@ int main(int argc, char** argv) {
     std_msgs::Bool land_msg;
     land_msg.data = true;
     pub_land.publish(land_msg);
+    */
 
     return 0;
 }
