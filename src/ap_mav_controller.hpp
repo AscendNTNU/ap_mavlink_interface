@@ -112,7 +112,7 @@ public:
                 this->offboard->set_attitude({0, 0, 0, 0});
                 if (this->state.offboard()) {
                     this->state = State::Ready;
-                    this->ready_cb(true);
+                    if (this->ready_cb) this->ready_cb(true);
                 }
                 else {
                     this->state = State::Armed;
@@ -120,7 +120,7 @@ public:
             }
             else if (!armed && this->state.armed()) {
                 AP_MAV_INFO("Drone was unarmed");
-                this->ready_cb(false);
+                if (this->ready_cb) this->ready_cb(false);
                 if (this->state.offboard()) {
                     this->state = State::OffboardUnarmed;
                 }
@@ -137,7 +137,7 @@ public:
                 // this->offboard->set_attitude({0, 0, 0, 0});
                 if (this->state.armed()) {
                     this->state = State::Ready;
-                    this->ready_cb(true);
+                    if (this->ready_cb) this->ready_cb(true);
                 }
                 else {
                     this->state = State::OffboardUnarmed;
@@ -145,7 +145,7 @@ public:
             }
             else if (flight_mode != mavsdk::Telemetry::FlightMode::OFFBOARD && this->state.offboard()) {
                 AP_MAV_INFO("Drone exited offboard mode");
-                this->ready_cb(false);
+                if (this->ready_cb) this->ready_cb(false);
                 if (this->state.armed()) {
                     this->state = State::Armed;
                 }
@@ -157,11 +157,11 @@ public:
 
         telemetry->position_velocity_ned_async([this](mavsdk::Telemetry::PositionVelocityNED pos_vel) {
             auto pos = pos_vel.position;
-            this->position_cb(pos.north_m, pos.east_m, pos.down_m);
+            if (this->position_cb) this->position_cb(pos.north_m, pos.east_m, pos.down_m);
         });
 
         telemetry->attitude_quaternion_async ([this](mavsdk::Telemetry::Quaternion q) {
-            this->attitude_cb(q.x, q.y, q.z, q.w);
+            if (this->attitude_cb) this->attitude_cb(q.x, q.y, q.z, q.w);
         });
 
         // We want to set a offboard pos, so that we can enter offboard mode later
