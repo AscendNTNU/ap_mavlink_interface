@@ -4,6 +4,8 @@
 #include <ap_mav_controller.hpp>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Quaternion.h>
 #include <mav_msgs/common.h>
 #include <mav_msgs/RateThrust.h>
 #include <std_msgs/Bool.h>
@@ -94,17 +96,24 @@ int main(int argc, char **argv)
         pub_ready.publish(msg);
     });
 
-    ros::Publisher pub_pose = n.advertise<std_msgs::Bool>("/uav/control/mav_pose", 100, true);
+    ros::Publisher pub_position = n.advertise<geometry_msgs::Point>("/uav/state/postion", 100);
+    ros::Publisher pub_attitude = n.advertise<geometry_msgs::Quaternion>("/uav/state/attitude", 100);
 
-    controller.position_update([pub_pose](float x, float y, float z, float roll, float pitch, float yaw) {
-        geometry_msgs::Pose msg;
-        msg.position.x = x;
-        msg.position.y = y;
-        msg.position.z = z;
-        tf2::Quaternion rotation;
-        rotation.setRPY(roll, pitch, yaw);
-        tf2::convert(rotation, msg.orientation);
-        pub_pose.publish(msg);
+    controller.position_update(10, [pub_position](float x, float y, float z) {
+        geometry_msgs::Point msg;
+        msg.x = x;
+        msg.y = y;
+        msg.z = z;
+        pub_position.publish(msg);
+    });
+
+    controller.attitude_update(10, [pub_attitude](float x, float y, float z, float w) {
+        geometry_msgs::Quaternion msg;
+        msg.x = x;
+        msg.y = y;
+        msg.z = z;
+        msg.w = w;
+        pub_attitude.publish(msg);
     });
 
     CallbackHandler cb = { &controller };

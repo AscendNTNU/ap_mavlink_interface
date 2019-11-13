@@ -48,7 +48,8 @@ class ApMavController {
     std::shared_ptr<mavsdk::Offboard> offboard;
     std::shared_ptr<mavsdk::Mocap> mocap;
     std::function<void(bool)> ready_cb;
-    std::function<void(float, float, float, float, float, float)> position_cb;
+    std::function<void(float, float, float)> position_cb;
+    std::function<void(float, float, float, float)> attitude_cb;
 
 private:
     int stop_offboard() {
@@ -152,6 +153,15 @@ public:
                     this->state = State::Connected;
                 }
             }
+        });
+
+        telemetry->position_velocity_ned_async([this](mavsdk::Telemetry::PositionVelocityNED pos_vel) {
+            auto pos = pos_vel.position;
+            this->position_cb(pos.north_m, pos.east_m, pos.down_m);
+        });
+
+        telemetry->attitude_quaternion_async ([this](mavsdk::Telemetry::Quaternion q) {
+            this->attitude_cb(q.x, q.y, q.z, q.w);
         });
 
         // We want to set a offboard pos, so that we can enter offboard mode later
@@ -276,7 +286,13 @@ public:
         return 0;
     }
 
-    void position_update(std::function<void(float, float, float, float, float, float)> fn) {
+    void position_update(int hz, std::function<void(float, float, float)> fn) {
+        telemetry->set_rate_position(hz);
         position_cb = fn;
+    }
+
+    void attitude_update(int hz, std::function<void(float, float, float, float)> fn) {
+        telemetry->set_rate_attitude(hz);
+        attitude_cb = fn;
     }
 };
