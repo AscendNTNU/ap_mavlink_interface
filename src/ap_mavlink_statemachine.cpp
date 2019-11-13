@@ -96,22 +96,26 @@ int main(int argc, char **argv)
         pub_ready.publish(msg);
     });
 
-    ros::Publisher pub_pose = n.advertise<geometry_msgs::Pose>("/uav/state/pose", 100);
+    ros::Publisher pub_pose = n.advertise<geometry_msgs::PoseStamped>("/uav/state/pose", 100);
 
-    geometry_msgs::Pose pose_msg;
+    geometry_msgs::PoseStamped pose_msg;
 
     controller.position_update(10, [&pose_msg, pub_pose](float x, float y, float z) {
-        pose_msg.position.x = x;
-        pose_msg.position.y = y;
-        pose_msg.position.z = z;
+        pose_msg.pose.position.x = x;
+        pose_msg.pose.position.y = y;
+        pose_msg.pose.position.z = z;
+        pose_msg.header.stamp = ros::Time::now();
+        pose_msg.header.seq++;
         pub_pose.publish(pose_msg);
     });
 
     controller.attitude_update(10, [&pose_msg, pub_pose](float x, float y, float z, float w) {
-        pose_msg.orientation.x = x;
-        pose_msg.orientation.y = y;
-        pose_msg.orientation.z = z;
-        pose_msg.orientation.w = w;
+        pose_msg.pose.orientation.x = x;
+        pose_msg.pose.orientation.y = y;
+        pose_msg.pose.orientation.z = z;
+        pose_msg.pose.orientation.w = w;
+        pose_msg.header.stamp = ros::Time::now();
+        pose_msg.header.seq++;
         pub_pose.publish(pose_msg);
     });
 
