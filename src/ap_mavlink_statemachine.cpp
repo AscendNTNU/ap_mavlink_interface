@@ -99,6 +99,7 @@ int main(int argc, char **argv)
     ros::Publisher pub_pose = n.advertise<geometry_msgs::PoseStamped>("/uav/state/pose", 100);
 
     geometry_msgs::PoseStamped pose_msg;
+    pose_msg.header.frame_id="world";
 
     controller.position_update(10, [&pose_msg, pub_pose](float x, float y, float z) {
         pose_msg.pose.position.x = x;
