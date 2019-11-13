@@ -268,12 +268,12 @@ public:
     int send_odometery(uint64_t usecs, float x, float y, float z, float roll, float pitch, float yaw) {
         // ~1cm in position, ~1rad in rotation
         mavsdk::Mocap::Covariance covariance =
-           {0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                 0.0, 0.0, 0.0, 0.0, 0.0,
-                      0.0, 0.0, 0.0, 0.0,
-                           0.0, 0.0, 0.0,
-                                0.0, 0.0,
-                                     0.0};
+           {0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
+                 0.01, 0.0, 0.0, 0.0, 0.0,
+                      0.01, 0.0, 0.0, 0.0,
+                           0.01, 0.0, 0.0,
+                                0.01, 0.0,
+                                     0.01};
 
         mavsdk::Mocap::VisionPositionEstimate pose;
         pose.time_usec = usecs;
