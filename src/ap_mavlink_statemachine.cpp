@@ -96,24 +96,23 @@ int main(int argc, char **argv)
         pub_ready.publish(msg);
     });
 
-    ros::Publisher pub_position = n.advertise<geometry_msgs::Point>("/uav/state/postion", 100);
-    ros::Publisher pub_attitude = n.advertise<geometry_msgs::Quaternion>("/uav/state/attitude", 100);
+    ros::Publisher pub_pose = n.advertise<geometry_msgs::Pose>("/uav/state/pose", 100);
 
-    controller.position_update(10, [pub_position](float x, float y, float z) {
-        geometry_msgs::Point msg;
-        msg.x = x;
-        msg.y = y;
-        msg.z = z;
-        pub_position.publish(msg);
+    geometry_msgs::Pose pose_msg;
+
+    controller.position_update(10, [&pose_msg, pub_pose](float x, float y, float z) {
+        pose_msg.position.x = x;
+        pose_msg.position.y = y;
+        pose_msg.position.z = z;
+        pub_pose.publish(pose_msg);
     });
 
-    controller.attitude_update(10, [pub_attitude](float x, float y, float z, float w) {
-        geometry_msgs::Quaternion msg;
-        msg.x = x;
-        msg.y = y;
-        msg.z = z;
-        msg.w = w;
-        pub_attitude.publish(msg);
+    controller.attitude_update(10, [&pose_msg, pub_pose](float x, float y, float z, float w) {
+        pose_msg.orientation.x = x;
+        pose_msg.orientation.y = y;
+        pose_msg.orientation.z = z;
+        pose_msg.orientation.w = w;
+        pub_pose.publish(pose_msg);
     });
 
     CallbackHandler cb = { &controller };
