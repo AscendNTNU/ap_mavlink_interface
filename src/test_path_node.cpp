@@ -12,8 +12,8 @@ int main(int argc, char** argv) {
     ros::Publisher pub_position = n.advertise<geometry_msgs::Pose>("/uav/control/position", 1 );
 
     geometry_msgs::Pose pose;
-    pose.position.x = 0;
-    pose.position.y = 0;
+    pose.position.x = 1;
+    pose.position.y = 1;
     pose.position.z = 0.5;
 
     // Wait for ready
