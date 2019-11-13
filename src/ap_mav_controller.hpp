@@ -287,7 +287,7 @@ public:
     }
 
     void position_update(int hz, std::function<void(float, float, float)> fn) {
-        telemetry->set_rate_position(hz);
+        telemetry->set_rate_position_velocity_ned(hz);
         position_cb = fn;
     }
 
